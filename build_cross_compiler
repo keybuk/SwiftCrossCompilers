@@ -391,25 +391,25 @@ if [ "$subdir" == "usr" ]; then
 	# Normal toolchain
 	echo "    working in top level directory"
 
-	rsync -a "$tmp/usr/lib/swift/linux"        "$xc_tc_name/usr/lib/swift/"
-	rsync -a "$tmp/usr/lib/swift_static/linux" "$xc_tc_name/usr/lib/swift_static/"
+	rsync -a "$tmp/usr/lib/swift/linux"        "${cross_sdk_basename}/${linux_sdk_name}/usr/lib/swift/"
+	rsync -a "$tmp/usr/lib/swift_static/linux" "${cross_sdk_basename}/${linux_sdk_name}/usr/lib/swift_static/"
 
-	rsync -a "$tmp/usr/lib/swift/dispatch"     "$cross_sdk_basename/$linux_sdk_name/usr/include/"
-	rsync -a "$tmp/usr/lib/swift/os"           "$cross_sdk_basename/$linux_sdk_name/usr/include/"
-	rsync -a "$tmp/usr/lib/swift/CoreFoundation" "$cross_sdk_basename/$linux_sdk_name/usr/include/"
+	rsync -a "$tmp/usr/lib/swift/dispatch"     "${cross_sdk_basename}/${linux_sdk_name}/usr/include/"
+	rsync -a "$tmp/usr/lib/swift/os"           "${cross_sdk_basename}/${linux_sdk_name}/usr/include/"
+	rsync -a "$tmp/usr/lib/swift/CoreFoundation" "${cross_sdk_basename}/${linux_sdk_name}/usr/include/"
 else
 	# Apple-distributed amd64 toolchains put an extra directory layer in the .tar.gz file.  Handle here
 	echo "    working in subdir = ${subdir}"
 
-	rsync -a "$tmp/${subdir}/usr/lib/swift/linux"        "$xc_tc_name/usr/lib/swift/"
-	rsync -a "$tmp/${subdir}/usr/lib/swift_static/linux" "$xc_tc_name/usr/lib/swift_static/"
+	rsync -a "$tmp/${subdir}/usr/lib/swift/linux"        "${cross_sdk_basename}/${linux_sdk_name}/usr/lib/swift/"
+	rsync -a "$tmp/${subdir}/usr/lib/swift_static/linux" "${cross_sdk_basename}/${linux_sdk_name}/usr/lib/swift_static/"
 
-	rsync -a "$tmp/${subdir}/usr/lib/swift/dispatch"     "$cross_sdk_basename/$linux_sdk_name/usr/include/"
-	rsync -a "$tmp/${subdir}/usr/lib/swift/os"           "$cross_sdk_basename/$linux_sdk_name/usr/include/"
-	rsync -a "$tmp/${subdir}/usr/lib/swift/CoreFoundation" "$cross_sdk_basename/$linux_sdk_name/usr/include/"
+	rsync -a "$tmp/${subdir}/usr/lib/swift/dispatch"     "${cross_sdk_basename}/${linux_sdk_name}/usr/include/"
+	rsync -a "$tmp/${subdir}/usr/lib/swift/os"           "${cross_sdk_basename}/${linux_sdk_name}/usr/include/"
+	rsync -a "$tmp/${subdir}/usr/lib/swift/CoreFoundation" "${cross_sdk_basename}/${linux_sdk_name}/usr/include/"
 fi
 
-rm -rf "$cross_sdk_basename/$linux_sdk_name/usr/share/doc"
+rm -rf "${cross_sdk_basename}/${linux_sdk_name}/usr/share/doc"
 rm -rf "$tmp"
 
 # add missing symlink
@@ -419,7 +419,7 @@ fi
 )
 
 echo "Verify SDK Links"
-VALID=`find $cross_sdk_basename/$linux_sdk_name -type l -exec sh -c 'file -b "$1" | grep -q ^broken' sh {} \; -print | wc | awk '{print($1)}'`
+VALID=`find ${cross_sdk_basename}/${linux_sdk_name} -type l -exec sh -c 'file -b "$1" | grep -q ^broken' sh {} \; -print | wc | awk '{print($1)}'`
 if [[ $VALID -ne 0 ]]; then
     echo "    Invalid links in SDK: $VALID, exiting"
     exit 77
@@ -427,13 +427,13 @@ fi
 echo "    SDK is valid"
 
 echo "Fixing module map"
-fix_glibc_modulemap "$cross_tc_basename/$xc_tc_name/usr/lib/swift/linux/${TARGET_ARCH}/glibc.modulemap"
+fix_glibc_modulemap "${cross_sdk_basename}/${linux_sdk_name}/usr/lib/swift/linux/${TARGET_ARCH}/glibc.modulemap"
 
 # special case handling for armv6
 if [ "${TARGET_ARCH}" == "armv6" ]; then
 	(
-	pushd ${cross_tc_basename}/${xc_tc_name}/usr/lib/swift/linux; ln -s ./armv6 armv7; popd
-	pushd ${cross_tc_basename}/${xc_tc_name}/usr/lib/swift_static/linux; ln -s ./armv6 armv7; popd
+	pushd ${cross_sdk_basename}/${linux_sdk_name}/usr/lib/swift/linux; ln -s ./armv6 armv7; popd
+	pushd ${cross_sdk_basename}/${linux_sdk_name}/usr/lib/swift_static/linux; ln -s ./armv6 armv7; popd
 	)
 fi 
 
@@ -471,17 +471,9 @@ pushd ${cross_sdk_basename}/${linux_sdk_name} >> /dev/null
 tar zcf ../${ARCH_NAME}-${VERSION_NUMBER}-sdk-libs.tar.gz `find usr -name "*.so*"` `find lib -name "*.so*"` `find . -name "lldb-server*"`
 popd >> /dev/null
 
-echo "Generate ${ARCH_NAME} Toolchain tarball: ${cross_tc_basename}/${ARCH_NAME}-${VERSION_NUMBER}-toolchain-libs.tar.gz"
-pushd ${cross_tc_basename}/${xc_tc_name} >> /dev/null
-tar zcf ../${ARCH_NAME}-${VERSION_NUMBER}-toolchain-libs.tar.gz `find usr/lib/swift/linux -name "*.so*"`
-popd >> /dev/null
-
 echo "Generate combined runtime tarball: $cross_runtime_basename/${runtime_name}"
-mv ${cross_tc_basename}/${ARCH_NAME}-${VERSION_NUMBER}-toolchain-libs.tar.gz $cross_runtime_basename/$ARCH_NAME-$VERSION_NUMBER
 mv ${cross_sdk_basename}/${ARCH_NAME}-${VERSION_NUMBER}-sdk-libs.tar.gz $cross_runtime_basename/$ARCH_NAME-$VERSION_NUMBER
 pushd $cross_runtime_basename/$ARCH_NAME-$VERSION_NUMBER > /dev/null
-tar zxf ./${ARCH_NAME}-${VERSION_NUMBER}-toolchain-libs.tar.gz
-rm -rf ./${ARCH_NAME}-${VERSION_NUMBER}-toolchain-libs.tar.gz
 tar zxf ./${ARCH_NAME}-${VERSION_NUMBER}-sdk-libs.tar.gz
 rm -rf ./${ARCH_NAME}-${VERSION_NUMBER}-sdk-libs.tar.gz
 rm -rf usr/share usr/bin usr/sbin usr/include || true
