@@ -411,6 +411,11 @@ fi
 
 rm -rf "$cross_sdk_basename/$linux_sdk_name/usr/share/doc"
 rm -rf "$tmp"
+
+# add missing symlink
+if [ ! -L ${xc_tc_name}/usr/bin/swift-autolink-extract ]; then
+	ln -s swift ${xc_tc_name}/usr/bin/swift-autolink-extract
+fi
 )
 
 echo "Verify SDK Links"
@@ -431,6 +436,7 @@ if [ "${TARGET_ARCH}" == "armv6" ]; then
 	pushd ${cross_tc_basename}/${xc_tc_name}/usr/lib/swift_static/linux; ln -s ./armv6 armv7; popd
 	)
 fi 
+
 
 # --- Generate the destination specification  --------------------------------
 echo "Generate ${ARCH_NAME} destination descriptor"
